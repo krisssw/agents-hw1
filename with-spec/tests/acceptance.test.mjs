@@ -587,3 +587,105 @@ describe('fix-sandbox-input · index.html (3.3)', () => {
     assert.equal(/type="submit"/.test(html), false);
   });
 });
+
+// ---------- compact-summary: статические проверки ----------
+// Геометрию (≤ 200 px, top ≤ 360 px) без браузера не измерить — её проверяет оператор.
+function summarySection(html) {
+  const start = html.indexOf('<section class="card summary"');
+  assert.ok(start >= 0, 'секция .summary не найдена');
+  return html.slice(start, html.indexOf('</section>', start) + '</section>'.length);
+}
+
+// Блок между маркерами внутри @media (min-width: 900px) → [{ selector, decls }].
+function compactRules(css) {
+  const media = css.indexOf('@media (min-width: 900px)');
+  const a = css.indexOf('/* compact-summary:start */');
+  const b = css.indexOf('/* compact-summary:end */');
+  assert.ok(a > 0 && b > a, 'маркеры compact-summary не найдены');
+  assert.ok(media >= 0 && media < a, 'блок должен быть внутри @media (min-width: 900px)');
+  // Между началом медиазапроса и маркером не должно закрываться больше скобок, чем открыто.
+  const between = css.slice(media, a);
+  const depth = (between.match(/\{/g) ?? []).length - (between.match(/\}/g) ?? []).length;
+  assert.equal(depth, 1, 'маркеры должны находиться прямо внутри @media (min-width: 900px)');
+  const body = css.slice(a, b).replace(/\/\*[\s\S]*?\*\//g, '');
+  return [...body.matchAll(/([^{}]+)\{([^}]*)\}/g)].map(([, sel, decls]) => ({
+    selector: sel.trim(),
+    decls: Object.fromEntries(decls.split(';').map((d) => d.trim()).filter(Boolean)
+      .map((d) => [d.slice(0, d.indexOf(':')).trim(), d.slice(d.indexOf(':') + 1).trim()])),
+  }));
+}
+
+const ROOT_PX_WIDE = 18; // html { font-size: 18px } в @media (min-width: 900px)
+function toPx(v) {
+  const m = String(v).match(/^([\d.]+)(px|rem)$/);
+  assert.ok(m, `ожидалось значение в px или rem, получено «${v}»`);
+  return m[2] === 'rem' ? Number(m[1]) * ROOT_PX_WIDE : Number(m[1]);
+}
+
+describe('compact-summary · Разметка «Итогов» не изменена (3.1)', () => {
+  const sec = summarySection(read('index.html'));
+  test('набор id в блоке «Итоги» прежний', () => {
+    const ids = [...sec.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
+    assert.deepEqual(ids, ['summary-title', 'total-hours', 'done-hours', 'progress-value', 'progress-bar']);
+  });
+  test('тексты подписей прежние, подпись связана с полосой', () => {
+    const texts = [...sec.matchAll(/>([^<>]*\S[^<>]*)</g)].map((m) => m[1].trim());
+    for (const t of ['Итоги', 'Всего', 'Выполнено', 'Прогресс', 'ч', '%', 'Прогресс по часам']) {
+      assert.ok(texts.includes(t), `нет текста «${t}»`);
+    }
+    assert.match(sec, /<label class="progress-label" for="progress-bar">Прогресс по часам<\/label>/);
+    assert.equal((sec.match(/<dt>/g) ?? []).length, 3);
+    assert.equal((sec.match(/<dd>/g) ?? []).length, 3);
+  });
+});
+
+describe('compact-summary · CSS компактного блока (3.2)', () => {
+  const rules = compactRules(read('styles.css'));
+  const rule = (sel) => {
+    const r = rules.find((x) => x.selector === sel);
+    assert.ok(r, `нет правила ${sel}`);
+    return r.decls;
+  };
+
+  test('все селекторы блока относятся только к .summary', () => {
+    assert.ok(rules.length > 0);
+    for (const { selector } of rules) {
+      for (const part of selector.split(',')) assert.match(part.trim(), /^\.summary\b/, `селектор «${part.trim()}»`);
+    }
+  });
+
+  test('.summary — сетка, подпись и полоса прогресса в одной строке', () => {
+    const s = rule('.summary');
+    assert.equal(s.display, 'grid');
+    assert.match(s['grid-template-columns'], /^auto\s+minmax\(0,\s*1fr\)$/);
+    assert.equal(rule('.summary h2')['grid-column'], '1 / -1');
+    assert.equal(rule('.summary .summary__grid')['grid-column'], '1 / -1');
+    assert.equal(rule('.summary .progress-label')['white-space'], 'nowrap');
+  });
+
+  test('числа плиток 32–40 px (≥ 24 px по брифу и в диапазоне redesign-ui)', () => {
+    const px = toPx(rule('.summary .tile__num')['font-size']);
+    assert.ok(px >= 32 && px <= 40, `числа ${px}px`);
+  });
+
+  test('подписи, единицы и «Прогресс по часам» не меньше 13 px', () => {
+    for (const sel of ['.summary .tile dt', '.summary .tile__unit', '.summary .progress-label']) {
+      const px = toPx(rule(sel)['font-size']);
+      assert.ok(px >= 13, `${sel}: ${px}px`);
+    }
+  });
+
+  test('внутренние отступы карточки «Итоги» 20–28 px', () => {
+    const parts = rule('.summary').padding.split(/\s+/).map(toPx);
+    assert.ok(parts.length >= 1 && parts.length <= 4);
+    for (const p of parts) assert.ok(p >= 20 && p <= 28, `padding ${p}px`);
+  });
+
+  test('компактные значения вне медиазапроса не применяются: прежние базовые правила на месте', () => {
+    const css = read('styles.css');
+    const before = css.slice(0, css.indexOf('/* compact-summary:start */'));
+    assert.match(before, /\.tile__num \{\s*font-size: clamp\(32px, 8\.5vw, 40px\);/);
+    assert.match(before, /\.card \{\s*min-width: 0;\s*padding: 22px 20px;/);
+    assert.match(before, /\.card \{\s*padding: 26px 28px;\s*\}/);
+  });
+});

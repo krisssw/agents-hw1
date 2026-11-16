@@ -1,0 +1,15 @@
+## 2026-11-16T15:45:02+00:00 compact-summary
+tracker.js собран (20881 символов).
+# tests 81
+# pass 81
+# fail 0
+check OK app.mjs
+check OK build.mjs
+check OK domain.mjs
+check OK tracker.js
+check OK tests/acceptance.test.mjs
+✓ change/build-tracker
+✓ change/compact-summary
+✓ change/fix-sandbox-input
+✓ change/redesign-ui
+Totals: 4 passed, 0 failed (4 items)

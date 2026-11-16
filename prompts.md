@@ -74,3 +74,19 @@
 ### Обращение 2
 > /opsx-apply fix-sandbox-input
 > Выполни по .opencode/commands/opsx-apply.md и SKILL.md. Не меняй правила build-tracker/redesign-ui и значения T1–T5; прежние тесты не удаляй и не ослабляй. Запусти node build.mjs, node --test tests/acceptance.test.mjs, node --check для всех .mjs и tracker.js. В tasks.md отмечай только реально выполненное (повторную проверку оператором в браузере не отмечай, браузер не запускай). Допиши в REPORT.md раздел «Исправление дефекта 01 (fix-sandbox-input)».
+
+---
+
+# Правка 02: компактный блок «Итоги» (только with-spec)
+
+Запрос пользователя: блок «Итоги» слишком большой, «Новая задача» должна начинаться примерно на середине экрана. Оператор замерил текущее состояние и описал его в `with-spec/compact-summary-brief.md` (шаги, ожидание, факт).
+
+### Обращение 1
+> /opsx-propose compact-summary
+> Используй compact-summary-brief.md. Подготовь proposal, specs/tracker/spec.md (дельта ADDED Requirements: компактный блок «Итоги» высотой не больше 200 px при ширине больше 1000 px; «Новая задача» начинается не ниже 360 px при окне 1440×720; ограничения на читаемость шрифтов; id, тексты и логика не меняются), design.md и tasks.md (отдельный раздел — повторная проверка оператором в браузере). Код не пиши.
+
+Оператор: `openspec validate compact-summary --strict --no-interactive` → valid.
+
+### Обращение 2
+> /opsx-apply compact-summary
+> Выполни по .opencode/commands/opsx-apply.md и SKILL.md. Прежние правила, значения T1–T5 и тесты не меняй и не ослабляй. Запусти node build.mjs, node --test tests/acceptance.test.mjs, node --check. В tasks.md отмечай только реально выполненное (раздел 5 не отмечай, браузер не запускай). Допиши в REPORT.md раздел «Правка compact-summary».
