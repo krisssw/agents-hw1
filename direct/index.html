@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Мини-трекер учебных задач</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <h1>Учебные задачи на неделю</h1>
+
+    <section class="stats" aria-label="Итоги">
+      <p>Всего: <strong id="total-hours">0</strong> ч</p>
+      <p>Выполнено: <strong id="done-hours">0</strong> ч</p>
+      <p>Прогресс: <strong id="progress">0%</strong></p>
+      <div class="bar" role="progressbar" aria-label="Прогресс по часам" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-bar">
+        <div class="bar-fill" id="progress-fill"></div>
+      </div>
+    </section>
+
+    <p id="storage-msg" class="notice" role="status" hidden></p>
+
+    <form id="task-form" novalidate>
+      <div class="field">
+        <label for="title">Название задачи</label>
+        <input id="title" name="title" type="text" autocomplete="off" aria-describedby="title-error">
+        <p id="title-error" class="error" role="alert"></p>
+      </div>
+      <div class="field">
+        <label for="hours">Часы (0,5–24, шаг 0,5)</label>
+        <input id="hours" name="hours" type="text" inputmode="decimal" aria-describedby="hours-error">
+        <p id="hours-error" class="error" role="alert"></p>
+      </div>
+      <button type="submit">Добавить задачу</button>
+    </form>
+
+    <fieldset class="filters">
+      <legend>Фильтр</legend>
+      <label><input type="radio" name="filter" value="all" checked> Все</label>
+      <label><input type="radio" name="filter" value="active"> Активные</label>
+      <label><input type="radio" name="filter" value="done"> Выполненные</label>
+    </fieldset>
+
+    <ul id="task-list" class="tasks" aria-label="Список задач"></ul>
+    <p id="empty" class="empty" hidden>Задач нет.</p>
+  </main>
+  <script type="module" src="app.mjs"></script>
+</body>
+</html>

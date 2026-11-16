@@ -1,0 +1,291 @@
+/* Mobile-first: без фиксированных ширин больше 390 px. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --text: #1c1f24;
+  --muted: #5a6270;
+  --accent: #1f5fbf;
+  --accent-dark: #174a96;
+  --danger: #b3261e;
+  --done: #2e7d32;
+  --border: #d5d9e0;
+  --radius: 10px;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.app {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+
+h2 {
+  font-size: 1.1rem;
+  margin: 0 0 10px;
+}
+
+section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.notice {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: #fff4d6;
+  border: 1px solid #e6c55c;
+}
+
+/* Итоги */
+.summary__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.summary__item {
+  text-align: center;
+  padding: 8px 4px;
+  background: var(--bg);
+  border-radius: 8px;
+}
+
+.summary__item dt {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.summary__item dd {
+  margin: 2px 0 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.progress-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+progress {
+  width: 100%;
+  height: 14px;
+}
+
+/* Форма */
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+label {
+  font-weight: 500;
+}
+
+input,
+select,
+button {
+  font: inherit;
+  max-width: 100%;
+}
+
+input[type="text"],
+select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+}
+
+input[aria-invalid="true"] {
+  border-color: var(--danger);
+  outline-color: var(--danger);
+}
+
+.field__error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.btn {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.btn--primary {
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn--primary:hover,
+.btn--primary:focus-visible {
+  background: var(--accent-dark);
+}
+
+.btn--remove {
+  min-height: 40px;
+  padding: 6px 12px;
+  background: #fff;
+  color: var(--danger);
+  border-color: var(--danger);
+  flex: 0 0 auto;
+}
+
+/* Список */
+.list__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.list__head h2 {
+  margin: 0;
+}
+
+.filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.filter select {
+  width: auto;
+  padding: 6px 10px;
+}
+
+.tasks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.task {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.task:first-child {
+  border-top: 0;
+}
+
+.task__toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.task__toggle input {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.task__text {
+  min-width: 0;
+}
+
+.task__hours {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.task__status {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.task--done .task__title {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.task--done .task__status {
+  color: var(--done);
+}
+
+.empty {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+@media (min-width: 560px) {
+  .field {
+    flex: 1 1 200px;
+  }
+
+  .field--hours {
+    flex: 0 1 190px;
+  }
+
+  .btn--primary {
+    width: auto;
+    margin-top: 28px;
+  }
+}

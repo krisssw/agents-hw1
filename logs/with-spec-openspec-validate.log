@@ -1,0 +1,22 @@
+2026-11-16T13:28:37+00:00
+$ openspec validate build-tracker --strict --no-interactive
+Change 'build-tracker' is valid
+exit=0
+2026-11-16T13:33:02+00:00
+$ openspec validate build-tracker --strict --no-interactive  (финальная, после реализации)
+Change 'build-tracker' is valid
+exit=0
+$ openspec status --change build-tracker
+- Loading change status...
+Change: build-tracker
+Schema: spec-driven
+Change root: /home/user/workspace/agents-hw1/with-spec/openspec/changes/build-tracker
+Progress: 4/4 artifacts complete
+
+[x] proposal
+[x] specs
+[x] design
+[x] tasks
+
+All planning artifacts complete!
+Next: openspec instructions apply --change "build-tracker" --json

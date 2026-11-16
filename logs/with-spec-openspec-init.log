@@ -1,0 +1,23 @@
+2026-11-16T13:26:36+00:00
+$ openspec init --tools opencode --language ru
+Note: OpenSpec collects anonymous usage stats. Opt out: OPENSPEC_TELEMETRY=0 or openspec config set telemetry.enabled false
+- Creating OpenSpec structure...
+▌ OpenSpec structure created
+- Setting up OpenCode...
+✔ Setup complete for OpenCode
+
+OpenSpec Setup Complete
+
+Created: OpenCode
+6 skills and 6 commands in .opencode/
+Config: openspec/config.yaml (schema: spec-driven)
+
+Getting started:
+  Start your first change: /opsx-propose "your idea"
+
+Note: 6 more workflows are available (new, continue, ff, bulk-archive, verify, onboard).
+Add them with `openspec config profile`.
+
+Learn more: https://github.com/Fission-AI/OpenSpec
+Feedback:   https://github.com/Fission-AI/OpenSpec/issues
+

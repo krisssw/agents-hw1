@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Мини-трекер учебных задач</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="app__header">
+      <h1>Учебные задачи на неделю</h1>
+    </header>
+
+    <p id="storage-message" class="notice" role="status" hidden></p>
+
+    <section class="summary" aria-labelledby="summary-title">
+      <h2 id="summary-title" class="visually-hidden">Итоги</h2>
+      <dl class="summary__grid">
+        <div class="summary__item">
+          <dt>Всего</dt>
+          <dd><span id="total-hours">0</span> ч</dd>
+        </div>
+        <div class="summary__item">
+          <dt>Выполнено</dt>
+          <dd><span id="done-hours">0</span> ч</dd>
+        </div>
+        <div class="summary__item">
+          <dt>Прогресс</dt>
+          <dd><span id="progress-value">0</span>%</dd>
+        </div>
+      </dl>
+      <label class="progress-label" for="progress-bar">Прогресс по часам</label>
+      <progress id="progress-bar" max="100" value="0">0%</progress>
+    </section>
+
+    <section class="add" aria-labelledby="add-title">
+      <h2 id="add-title">Новая задача</h2>
+      <form id="task-form" class="form" novalidate>
+        <div class="field">
+          <label for="task-title">Название</label>
+          <input id="task-title" name="title" type="text" autocomplete="off"
+                 aria-describedby="task-title-error">
+          <p id="task-title-error" class="field__error" aria-live="polite" hidden></p>
+        </div>
+        <div class="field field--hours">
+          <label for="task-hours">Часы (0,5–24, шаг 0,5)</label>
+          <input id="task-hours" name="hours" type="text" inputmode="decimal"
+                 autocomplete="off" aria-describedby="task-hours-error">
+          <p id="task-hours-error" class="field__error" aria-live="polite" hidden></p>
+        </div>
+        <button type="submit" class="btn btn--primary">Добавить</button>
+      </form>
+    </section>
+
+    <section class="list" aria-labelledby="list-title">
+      <div class="list__head">
+        <h2 id="list-title">Задачи</h2>
+        <div class="filter">
+          <label for="task-filter">Показать</label>
+          <select id="task-filter" name="filter">
+            <option value="all">Все</option>
+            <option value="active">Активные</option>
+            <option value="done">Выполненные</option>
+          </select>
+        </div>
+      </div>
+      <ul id="task-list" class="tasks"></ul>
+      <p id="empty-message" class="empty" hidden></p>
+    </section>
+  </main>
+
+  <script type="module" src="app.mjs"></script>
+</body>
+</html>
