@@ -1,0 +1,9 @@
+2026-11-16T14:58:10+00:00
+$ openspec validate redesign-ui --strict --no-interactive
+Change 'redesign-ui' is valid
+exit=0
+2026-11-16T15:04:19+00:00
+$ openspec validate --all --strict --no-interactive (после реализации redesign-ui)
+✓ change/build-tracker
+✓ change/redesign-ui
+Totals: 2 passed, 0 failed (2 items)

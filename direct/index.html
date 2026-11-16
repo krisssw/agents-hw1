@@ -1,50 +1,118 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
   <title>Мини-трекер учебных задач</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main class="app">
-    <h1>Учебные задачи на неделю</h1>
-
-    <section class="stats" aria-label="Итоги">
-      <p>Всего: <strong id="total-hours">0</strong> ч</p>
-      <p>Выполнено: <strong id="done-hours">0</strong> ч</p>
-      <p>Прогресс: <strong id="progress">0%</strong></p>
-      <div class="bar" role="progressbar" aria-label="Прогресс по часам" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-bar">
-        <div class="bar-fill" id="progress-fill"></div>
+  <div class="page">
+    <header class="header">
+      <div class="header-text">
+        <h1>Учебные задачи <span class="accent-word">на неделю</span></h1>
+        <p class="subtitle">Планируйте часы и следите за прогрессом по выполненным задачам.</p>
       </div>
-    </section>
+      <div class="settings-wrap">
+        <button type="button" id="settings-btn" class="icon-btn" aria-label="Настройки" aria-haspopup="dialog" aria-expanded="false" aria-controls="settings-panel">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+            <path fill="currentColor" d="M19.14 12.94a7.4 7.4 0 0 0 .05-.94 7.4 7.4 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7 7 0 0 0-1.63-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54a7 7 0 0 0-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.65 8.84a.5.5 0 0 0 .12.64l2.03 1.58a7.4 7.4 0 0 0-.05.94c0 .32.02.63.05.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.38 1.05.7 1.63.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54a7 7 0 0 0 1.63-.94l2.39.96c.22.08.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/>
+          </svg>
+        </button>
+
+        <div id="settings-panel" class="card settings-panel" role="dialog" aria-modal="false" aria-labelledby="settings-title" hidden>
+          <div class="settings-head">
+            <h2 id="settings-title">Настройки</h2>
+            <button type="button" id="settings-close" class="pill">Закрыть</button>
+          </div>
+
+          <fieldset class="settings-group">
+            <legend>Тема</legend>
+            <div class="pills" id="theme-options">
+              <label class="pill-radio"><input type="radio" name="theme" value="dark"><span>Тёмная</span></label>
+              <label class="pill-radio"><input type="radio" name="theme" value="light"><span>Светлая</span></label>
+              <label class="pill-radio"><input type="radio" name="theme" value="system"><span>Системная</span></label>
+            </div>
+          </fieldset>
+
+          <fieldset class="settings-group">
+            <legend>Цвет выделения</legend>
+            <div class="swatches" id="swatches" role="radiogroup" aria-label="Готовые цвета"></div>
+          </fieldset>
+
+          <fieldset class="settings-group">
+            <legend>Свой цвет</legend>
+            <div class="slider">
+              <label for="acc-h">Оттенок <output id="acc-h-out" for="acc-h"></output></label>
+              <input id="acc-h" type="range" min="0" max="360" step="1" class="range range-hue">
+            </div>
+            <div class="slider">
+              <label for="acc-s">Насыщенность <output id="acc-s-out" for="acc-s"></output></label>
+              <input id="acc-s" type="range" min="0" max="100" step="1" class="range range-sat">
+            </div>
+            <div class="slider">
+              <label for="acc-l">Яркость <output id="acc-l-out" for="acc-l"></output></label>
+              <input id="acc-l" type="range" min="20" max="80" step="1" class="range range-light">
+            </div>
+            <div class="sample-row">
+              <span class="sample" id="accent-sample" aria-hidden="true"></span>
+              <span id="accent-name">Сиреневый</span>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+    </header>
 
     <p id="storage-msg" class="notice" role="status" hidden></p>
 
-    <form id="task-form" novalidate>
-      <div class="field">
-        <label for="title">Название задачи</label>
-        <input id="title" name="title" type="text" autocomplete="off" aria-describedby="title-error">
-        <p id="title-error" class="error" role="alert"></p>
-      </div>
-      <div class="field">
-        <label for="hours">Часы (0,5–24, шаг 0,5)</label>
-        <input id="hours" name="hours" type="text" inputmode="decimal" aria-describedby="hours-error">
-        <p id="hours-error" class="error" role="alert"></p>
-      </div>
-      <button type="submit">Добавить задачу</button>
-    </form>
+    <main class="grid">
+      <div class="col">
+        <section class="card" aria-labelledby="stats-title">
+          <h2 id="stats-title">Итоги</h2>
+          <div class="tiles">
+            <div class="tile"><span class="tile-label">Всего</span><span class="tile-value"><span id="total-hours">0</span><small> ч</small></span></div>
+            <div class="tile"><span class="tile-label">Выполнено</span><span class="tile-value"><span id="done-hours">0</span><small> ч</small></span></div>
+            <div class="tile"><span class="tile-label">Прогресс</span><span class="tile-value" id="progress">0%</span></div>
+          </div>
+          <div class="bar" role="progressbar" aria-label="Прогресс по часам" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-bar">
+            <div class="bar-fill" id="progress-fill"></div>
+          </div>
+        </section>
 
-    <fieldset class="filters">
-      <legend>Фильтр</legend>
-      <label><input type="radio" name="filter" value="all" checked> Все</label>
-      <label><input type="radio" name="filter" value="active"> Активные</label>
-      <label><input type="radio" name="filter" value="done"> Выполненные</label>
-    </fieldset>
+        <section class="card" aria-labelledby="form-title">
+          <h2 id="form-title">Новая задача</h2>
+          <form id="task-form" novalidate>
+            <div class="field">
+              <label for="title">Название задачи</label>
+              <input id="title" name="title" type="text" autocomplete="off" enterkeyhint="next" aria-describedby="title-error">
+              <p id="title-error" class="error" role="alert"></p>
+            </div>
+            <div class="field">
+              <label for="hours">Часы (0,5–24, шаг 0,5)</label>
+              <input id="hours" name="hours" type="text" inputmode="decimal" enterkeyhint="done" aria-describedby="hours-error">
+              <p id="hours-error" class="error" role="alert"></p>
+            </div>
+            <button type="submit" id="add-btn" class="btn-accent">Добавить</button>
+          </form>
+        </section>
+      </div>
 
-    <ul id="task-list" class="tasks" aria-label="Список задач"></ul>
-    <p id="empty" class="empty" hidden>Задач нет.</p>
-  </main>
+      <section class="card tasks-card" aria-labelledby="tasks-title">
+        <div class="tasks-head">
+          <h2 id="tasks-title">Задачи</h2>
+          <fieldset class="filters">
+            <legend class="visually-hidden">Фильтр</legend>
+            <label class="pill-radio"><input type="radio" name="filter" value="all" checked><span>Все</span></label>
+            <label class="pill-radio"><input type="radio" name="filter" value="active"><span>Активные</span></label>
+            <label class="pill-radio"><input type="radio" name="filter" value="done"><span>Выполненные</span></label>
+          </fieldset>
+        </div>
+        <ul id="task-list" class="tasks" aria-label="Список задач"></ul>
+        <p id="empty" class="empty" hidden>Задач нет.</p>
+      </section>
+    </main>
+  </div>
   <script type="module" src="app.mjs"></script>
 </body>
 </html>

@@ -6,10 +6,10 @@
 
 | Папка | Способ | Обращений | Автотесты |
 |---|---|---|---|
-| [`direct/`](direct/) | прямое задание, без OpenSpec | 1 | 5/5 pass |
-| [`with-spec/`](with-spec/) | OpenSpec CLI 1.14.1: `/opsx-propose` → `openspec validate --strict` → `/opsx-apply` | 2 | 32/32 pass |
+| [`direct/`](direct/) | прямое задание, без OpenSpec | 1 + 1 (дизайн) | 5/5 → после дизайна 11/11 |
+| [`with-spec/`](with-spec/) | OpenSpec CLI 1.14.1: `/opsx-propose` → `openspec validate --strict` → `/opsx-apply` | 2 + 2 (дизайн) | 32/32 → после дизайна 51/51 |
 
-Обе версии проходят T1–T5 в браузере. **Отчёт: [REPORT.md](REPORT.md)**
+Обе версии проходят T1–T5 в браузере. После сравнения обе версии доработаны по общему брифу `redesign-brief.md`: тёмный дашборд, настройки темы и цвета выделения, Enter. Исходная первая попытка сохранена в первом коммите, а её скриншоты лежат в `screenshots/`. **Отчёт: [REPORT.md](REPORT.md)**
 
 ## Что где лежит
 
@@ -18,7 +18,7 @@
 - `with-spec/openspec/changes/build-tracker/` — спецификация: `proposal.md`, `specs/tracker/spec.md`, `design.md`, `tasks.md`.
 - `prompts.md` — тексты всех обращений к ассистенту.
 - `logs/` — реальные логи: `openspec init`, `openspec validate`, `node --test`, `node --check`, браузерные проверки, http-server.
-- `screenshots/` — скриншоты T1, T3, T4, T5 и ширины 390 px для обеих версий.
+- `screenshots/` — скриншоты исходных версий; `screenshots/redesign/` — после доработки дизайна (тёмная и светлая темы, панель настроек, свой цвет, 390 px).
 - `tools/` — скрипты браузерной проверки (Playwright), которыми получены `logs/browser-*.log`.
 
 ## Запуск

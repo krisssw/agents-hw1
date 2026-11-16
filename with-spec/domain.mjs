@@ -106,3 +106,114 @@ export function isValidTaskList(data) {
     )
   );
 }
+
+// ---------- Настройки интерфейса (redesign-ui) ----------
+// Settings = { theme: 'dark'|'light'|'system', accent: { preset: id|null, h, s, l } }
+
+export const THEMES = ['dark', 'light', 'system'];
+
+export const ACCENT_PRESETS = [
+  { id: 'lilac', name: 'Сиреневый', h: 320, s: 35, l: 68 },
+  { id: 'blue', name: 'Синий', h: 217, s: 85, l: 62 },
+  { id: 'emerald', name: 'Изумрудный', h: 158, s: 60, l: 48 },
+  { id: 'amber', name: 'Янтарный', h: 38, s: 92, l: 56 },
+  { id: 'coral', name: 'Коралловый', h: 8, s: 80, l: 64 },
+];
+
+export const ACCENT_LIMITS = {
+  h: { min: 0, max: 360 },
+  s: { min: 0, max: 100 },
+  l: { min: 20, max: 80 },
+};
+
+const presetAccent = (p) => ({ preset: p.id, h: p.h, s: p.s, l: p.l });
+
+/** Настройки по умолчанию (новая копия при каждом вызове). */
+export function defaultSettings() {
+  return { theme: 'system', accent: presetAccent(ACCENT_PRESETS[0]) };
+}
+export const DEFAULT_SETTINGS = Object.freeze({
+  theme: 'system',
+  accent: Object.freeze(presetAccent(ACCENT_PRESETS[0])),
+});
+
+const clampNumber = (value, { min, max }, fallback) => {
+  const n = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+  if (typeof n !== 'number' || !Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, Math.round(n)));
+};
+
+/** Ограничить h/s/l диапазонами; нечисловое значение → значение по умолчанию. */
+export function clampAccent(accent = {}) {
+  const def = ACCENT_PRESETS[0];
+  const a = accent && typeof accent === 'object' ? accent : {};
+  return {
+    h: clampNumber(a.h, ACCENT_LIMITS.h, def.h),
+    s: clampNumber(a.s, ACCENT_LIMITS.s, def.s),
+    l: clampNumber(a.l, ACCENT_LIMITS.l, def.l),
+  };
+}
+
+/** id пресета, если h/s/l совпадают с пресетом, иначе null. */
+export function findPreset(accent) {
+  if (!accent) return null;
+  const p = ACCENT_PRESETS.find((x) => x.h === accent.h && x.s === accent.s && x.l === accent.l);
+  return p ? p.id : null;
+}
+
+/** Привести любые данные к корректным настройкам. */
+export function normalizeSettings(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return defaultSettings();
+  const theme = THEMES.includes(raw.theme) ? raw.theme : 'system';
+  const a = raw.accent;
+  let accent;
+  if (a && typeof a === 'object') {
+    const preset = ACCENT_PRESETS.find((p) => p.id === a.preset);
+    if (preset) {
+      accent = presetAccent(preset);
+    } else {
+      const c = clampAccent(a);
+      accent = { preset: findPreset(c), ...c };
+    }
+  } else {
+    accent = presetAccent(ACCENT_PRESETS[0]);
+  }
+  return { theme, accent };
+}
+
+/** Вычисленная тема: 'dark' | 'light'. */
+export function resolveTheme(theme, prefersDark) {
+  if (theme === 'dark' || theme === 'light') return theme;
+  return prefersDark ? 'dark' : 'light';
+}
+
+/** HSL (h 0–360, s/l 0–100) → sRGB 0–255. */
+export function hslToRgb({ h, s, l }) {
+  const sat = s / 100;
+  const lig = l / 100;
+  const k = (n) => (n + h / 30) % 12;
+  const a = sat * Math.min(lig, 1 - lig);
+  const f = (n) => lig - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return [f(0), f(8), f(4)].map((v) => Math.round(v * 255));
+}
+
+/** Относительная яркость по WCAG 2.x. */
+export function relativeLuminance([r, g, b]) {
+  const lin = (c) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+/** Контраст двух яркостей по WCAG. */
+export function contrastRatio(l1, l2) {
+  const [a, b] = l1 >= l2 ? [l1, l2] : [l2, l1];
+  return (a + 0.05) / (b + 0.05);
+}
+
+/** Цвет текста на акценте: '#000' или '#fff' — тот, у которого контраст выше. */
+export function accentTextColor(accent) {
+  const lum = relativeLuminance(hslToRgb(clampAccent(accent)));
+  return contrastRatio(lum, 0) >= contrastRatio(lum, 1) ? '#000' : '#fff';
+}

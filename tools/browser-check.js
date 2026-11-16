@@ -2,14 +2,14 @@
 // Запуск: node check.js  (Chromium headless, Playwright 1.59)
 const { chromium } = require('playwright');
 const fs = require('fs');
-const OUT = '/home/user/workspace/agents-hw1/screenshots';
+const OUT = '/home/user/workspace/agents-hw1/screenshots/redesign';
 fs.mkdirSync(OUT, { recursive: true });
 
 const V = {
   direct: { url: 'http://127.0.0.1:8080/', title: '#title', hours: '#hours', titleErr: '#title-error', hoursErr: '#hours-error',
-    progress: '#progress', setFilter: async (p, v) => p.check(`input[name=filter][value=${v}]`) },
+    progress: '#progress', setFilter: async (p, v) => p.locator('label', { has: p.locator(`input[name=filter][value=${v}]`) }).click() },
   'with-spec': { url: 'http://127.0.0.1:8081/', title: '#task-title', hours: '#task-hours', titleErr: '#task-title-error', hoursErr: '#task-hours-error',
-    progress: '#progress-value', setFilter: async (p, v) => p.selectOption('#task-filter', v) },
+    progress: '#progress-value', setFilter: async (p, v) => p.locator('label', { has: p.locator(`input[name=filter][value=${v}]`) }).click() },
 };
 
 const results = [];
@@ -39,7 +39,7 @@ async function errText(p, sel) { const l = p.locator(sel); return (await l.isVis
     rec(ver, 'T1', 'исходный пример', s.n === 3 && s.total === '8' && s.done === '2' && s.progress === '25', `задач ${s.n}, всего ${s.total} ч, выполнено ${s.done} ч, прогресс ${s.progress}%`);
     await p.screenshot({ path: `${OUT}/${ver}-T1-desktop.png`, fullPage: true });
     // T2
-    await p.locator('#task-list li', { hasText: 'Практика' }).locator('input[type=checkbox]').check();
+    await p.locator('#task-list li', { hasText: 'Практика' }).locator('input[type=checkbox]').check({ force: true });
     s = await state(p, c);
     const cb = await p.locator('#task-list li', { hasText: 'Практика' }).locator('input[type=checkbox]').isChecked();
     rec(ver, 'T2', '«Практика» готова', s.done === '6' && s.total === '8' && s.progress === '75' && cb, `выполнено ${s.done} из ${s.total} ч, прогресс ${s.progress}%, флажок=${cb}`);
@@ -102,5 +102,5 @@ async function errText(p, sel) { const l = p.locator(sel); return (await l.isVis
     await ctx.close();
   }
   await browser.close();
-  fs.writeFileSync('/home/user/workspace/agents-hw1/logs/browser-checks.json', JSON.stringify(results, null, 2));
+  fs.writeFileSync('/home/user/workspace/agents-hw1/logs/browser-checks-redesign.json', JSON.stringify(results, null, 2));
 })();

@@ -224,3 +224,126 @@ describe('Проверка загружаемых данных (необязат
     assert.equal(isValidTaskList([{ id: 'a', title: '', hours: 1, done: false }]), false);
   });
 });
+
+// ---------- redesign-ui: чистые функции настроек ----------
+import {
+  ACCENT_PRESETS,
+  DEFAULT_SETTINGS,
+  defaultSettings,
+  clampAccent,
+  normalizeSettings,
+  resolveTheme,
+  findPreset,
+  hslToRgb,
+  relativeLuminance,
+  contrastRatio,
+  accentTextColor,
+} from '../domain.mjs';
+
+describe('redesign-ui · Пресеты и настройки по умолчанию (1.1)', () => {
+  test('5 пресетов со значениями из брифа', () => {
+    assert.deepEqual(
+      ACCENT_PRESETS.map(({ id, name, h, s, l }) => [id, name, h, s, l]),
+      [
+        ['lilac', 'Сиреневый', 320, 35, 68],
+        ['blue', 'Синий', 217, 85, 62],
+        ['emerald', 'Изумрудный', 158, 60, 48],
+        ['amber', 'Янтарный', 38, 92, 56],
+        ['coral', 'Коралловый', 8, 80, 64],
+      ],
+    );
+  });
+
+  test('по умолчанию: тема «Системная», акцент Сиреневый', () => {
+    const expected = { theme: 'system', accent: { preset: 'lilac', h: 320, s: 35, l: 68 } };
+    assert.deepEqual(DEFAULT_SETTINGS, expected);
+    assert.deepEqual(defaultSettings(), expected);
+    const a = defaultSettings();
+    a.accent.h = 1;
+    assert.equal(defaultSettings().accent.h, 320, 'независимые копии');
+  });
+});
+
+describe('redesign-ui · Нормализация настроек (1.2)', () => {
+  test('неизвестная тема → «Системная»; известные темы сохраняются', () => {
+    assert.equal(normalizeSettings({ theme: 'neon' }).theme, 'system');
+    assert.equal(normalizeSettings({ theme: 'dark' }).theme, 'dark');
+    assert.equal(normalizeSettings({ theme: 'light' }).theme, 'light');
+    assert.equal(normalizeSettings({ theme: 'system' }).theme, 'system');
+  });
+
+  for (const raw of [null, undefined, 'строка', 42, [], {}]) {
+    test(`мусор ${JSON.stringify(raw)} → настройки по умолчанию`, () => {
+      assert.deepEqual(normalizeSettings(raw), DEFAULT_SETTINGS);
+    });
+  }
+
+  test('известный пресет восстанавливается из таблицы (подмена h/s/l игнорируется)', () => {
+    assert.deepEqual(normalizeSettings({ theme: 'dark', accent: { preset: 'blue', h: 1, s: 1, l: 1 } }), {
+      theme: 'dark',
+      accent: { preset: 'blue', h: 217, s: 85, l: 62 },
+    });
+  });
+
+  test('свой цвет ограничивается диапазонами', () => {
+    assert.deepEqual(clampAccent({ h: 400, s: 50, l: 95 }), { h: 360, s: 50, l: 80 });
+    assert.deepEqual(clampAccent({ h: -5, s: -10, l: 5 }), { h: 0, s: 0, l: 20 });
+    assert.deepEqual(clampAccent({ h: '200', s: '40.4', l: '33.6' }), { h: 200, s: 40, l: 34 });
+    assert.deepEqual(normalizeSettings({ theme: 'light', accent: { preset: null, h: 400, s: 50, l: 95 } }), {
+      theme: 'light',
+      accent: { preset: null, h: 360, s: 50, l: 80 },
+    });
+  });
+
+  test('нечисловые компоненты → значения Сиреневого', () => {
+    assert.deepEqual(clampAccent({ h: 'abc', s: NaN, l: Infinity }), { h: 320, s: 35, l: 68 });
+    assert.deepEqual(clampAccent(null), { h: 320, s: 35, l: 68 });
+  });
+
+  test('свой цвет, совпадающий с пресетом, получает id пресета', () => {
+    assert.equal(normalizeSettings({ accent: { preset: null, h: 38, s: 92, l: 56 } }).accent.preset, 'amber');
+  });
+});
+
+describe('redesign-ui · Цвет текста на акценте (2.1)', () => {
+  test('hslToRgb на опорных цветах', () => {
+    assert.deepEqual(hslToRgb({ h: 0, s: 100, l: 50 }), [255, 0, 0]);
+    assert.deepEqual(hslToRgb({ h: 120, s: 100, l: 50 }), [0, 255, 0]);
+    assert.deepEqual(hslToRgb({ h: 0, s: 0, l: 100 }), [255, 255, 255]);
+    assert.ok(Math.abs(contrastRatio(relativeLuminance([255, 255, 255]), 0) - 21) < 1e-9);
+  });
+
+  test('Янтарный → чёрный текст', () => {
+    assert.equal(accentTextColor({ h: 38, s: 92, l: 56 }), '#000');
+  });
+
+  test('яркость 25% → белый текст', () => {
+    assert.equal(accentTextColor({ h: 217, s: 85, l: 25 }), '#fff');
+    assert.equal(accentTextColor({ h: 0, s: 0, l: 25 }), '#fff');
+  });
+
+  test('для каждого пресета контраст выбранного цвета текста ≥ 4.5', () => {
+    for (const p of ACCENT_PRESETS) {
+      const lum = relativeLuminance(hslToRgb(p));
+      const text = accentTextColor(p);
+      const ratio = contrastRatio(lum, text === '#000' ? 0 : 1);
+      assert.ok(ratio >= 4.5, `${p.name}: ${ratio.toFixed(2)}`);
+    }
+  });
+});
+
+describe('redesign-ui · Тема и поиск пресета (2.2)', () => {
+  test('resolveTheme', () => {
+    assert.equal(resolveTheme('system', true), 'dark');
+    assert.equal(resolveTheme('system', false), 'light');
+    assert.equal(resolveTheme('light', true), 'light');
+    assert.equal(resolveTheme('dark', false), 'dark');
+    assert.equal(resolveTheme('neon', true), 'dark');
+  });
+
+  test('findPreset', () => {
+    assert.equal(findPreset({ h: 158, s: 60, l: 48 }), 'emerald');
+    assert.equal(findPreset({ h: 200, s: 60, l: 48 }), null);
+    assert.equal(findPreset(null), null);
+  });
+});
