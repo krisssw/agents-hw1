@@ -1,0 +1,97 @@
+2026-11-16T15:27:11+00:00
+# после исправления дефекта 01
+$ node build.mjs
+tracker.js собран из domain.mjs + app.mjs
+exit=0
+$ git diff --stat -- tracker.js
+exit=0
+$ node --test tests/acceptance.test.mjs
+TAP version 13
+# Subtest: T1 · Исходный пример: 3 задачи, 8 ч, 2 ч, 25% по часам
+ok 1 - T1 · Исходный пример: 3 задачи, 8 ч, 2 ч, 25% по часам
+  ---
+  duration_ms: 0.977656
+  ...
+# Subtest: T2 · Статус: «Практика» готова → 6 из 8 ч, 75%
+ok 2 - T2 · Статус: «Практика» готова → 6 из 8 ч, 75%
+  ---
+  duration_ms: 0.213693
+  ...
+# Subtest: T3 · Фильтр «активные» меняет только список, прогресс 25%
+ok 3 - T3 · Фильтр «активные» меняет только список, прогресс 25%
+  ---
+  duration_ms: 0.691534
+  ...
+# Subtest: T4 · Ошибки ввода: некорректная задача не добавляется
+ok 4 - T4 · Ошибки ввода: некорректная задача не добавляется
+  ---
+  duration_ms: 0.708126
+  ...
+# Subtest: T5 · Пустое состояние: 0 ч и 0%, без NaN/Infinity
+ok 5 - T5 · Пустое состояние: 0 ч и 0%, без NaN/Infinity
+  ---
+  duration_ms: 0.293476
+  ...
+# Subtest: D2 · Настройки по умолчанию: тема «Системная», акцент Сиреневый hsl(320 35% 68%)
+ok 6 - D2 · Настройки по умолчанию: тема «Системная», акцент Сиреневый hsl(320 35% 68%)
+  ---
+  duration_ms: 0.403136
+  ...
+# Subtest: D2 · Нормализация темы: неизвестная → «Системная», известные сохраняются
+ok 7 - D2 · Нормализация темы: неизвестная → «Системная», известные сохраняются
+  ---
+  duration_ms: 0.274926
+  ...
+# Subtest: D2 · Нормализация цвета: значения вне диапазонов ограничиваются
+ok 8 - D2 · Нормализация цвета: значения вне диапазонов ограничиваются
+  ---
+  duration_ms: 0.173407
+  ...
+# Subtest: D2 · Пять готовых цветов по брифу и распознавание пресета
+ok 9 - D2 · Пять готовых цветов по брифу и распознавание пресета
+  ---
+  duration_ms: 0.422163
+  ...
+# Subtest: D2 · Тема «Системная» следует prefers-color-scheme
+ok 10 - D2 · Тема «Системная» следует prefers-color-scheme
+  ---
+  duration_ms: 0.385504
+  ...
+# Subtest: D2 · Цвет текста на акценте: чёрный на светлом, белый на тёмном
+ok 11 - D2 · Цвет текста на акценте: чёрный на светлом, белый на тёмном
+  ---
+  duration_ms: 2.25723
+  ...
+# Subtest: B01 · tracker.js актуален: совпадает со сборкой из domain.mjs + app.mjs
+ok 12 - B01 · tracker.js актуален: совпадает со сборкой из domain.mjs + app.mjs
+  ---
+  duration_ms: 0.737977
+  ...
+# Subtest: B01 · tracker.js — классический скрипт без import/export, в IIFE
+ok 13 - B01 · tracker.js — классический скрипт без import/export, в IIFE
+  ---
+  duration_ms: 0.865778
+  ...
+# Subtest: B01 · index.html подключает tracker.js без type=module; добавление не через submit
+ok 14 - B01 · index.html подключает tracker.js без type=module; добавление не через submit
+  ---
+  duration_ms: 0.351828
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 91.239467
+exit=0
+$ node --check app.mjs
+exit=0
+$ node --check domain.mjs
+exit=0
+$ node --check build.mjs
+exit=0
+$ node --check tracker.js
+exit=0

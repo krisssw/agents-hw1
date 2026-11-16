@@ -156,3 +156,92 @@ ok (exit 0)
 - `min()`/`max()` внутри `hsl()` и стилизация `<progress>` зависят от поддержки браузером.
 
 Пункт **8.1** закрыт этим разделом.
+
+---
+
+# Исправление дефекта 01 (fix-sandbox-input)
+
+Изменение: `openspec/changes/fix-sandbox-input`, схема spec-driven. Реализация выполнена через `/opsx-apply fix-sandbox-input`. Прогресс по tasks.md — **13/16**. Не отмечены 5.1–5.3: это повторная проверка оператором в браузере (http, `file://`, iframe sandbox), а браузер здесь не запускался. Правила brief.md, redesign-brief.md, значения T1–T5 и прежние тесты не менялись.
+
+## Причина
+
+1. `<script type="module" src="app.mjs">` — при origin `null` (`file://`, iframe `sandbox="allow-scripts"`) Chromium блокирует ES-модуль по CORS, и трекер не работает целиком.
+2. Добавление шло только через `submit` формы. В iframe без `allow-forms` отправка формы блокируется, поэтому ни кнопка, ни Enter не добавляли задачу.
+
+## Что изменено
+
+| Файл | Изменения |
+|---|---|
+| `domain.mjs` | Прежние строки 1–219 не изменены. Добавлена чистая функция `isEnterSubmit({key, shiftKey, isComposing, keyCode})`: Enter без Shift, не во время IME (`isComposing` или `keyCode 229`). |
+| `app.mjs` | Логика добавления вынесена в `addFromForm()` (прежняя валидация, ошибки у полей, сохранение значений, подсветка, сброс, фокус в «Название»). Кнопка `#task-add` → `click`; поля «Название» и «Часы» → `keydown` с `isEnterSubmit` и `preventDefault`; запасной `submit` → `preventDefault()` и `addFromForm()`. Адаптер хранилища не менялся: все обращения к `localStorage`, включая геттер, уже находятся внутри `try/catch` (проверено `grep`). |
+| `index.html` | `<script src="tracker.js" defer></script>` вместо `type="module"`; кнопка «Добавить» — `id="task-add" type="button"`. Других `type="submit"` нет. |
+| `build.mjs` (новый) | Чистая функция `buildTracker({domainSource, appSource})`, константа `BANNER`, `buildFromDir`. При запуске `node build.mjs` пишет `tracker.js` атомарно (временный файл, затем rename). Как устроена сборка:<ul><li>в `domain.mjs` снимается `export` у `const/let/function/class`; блок `import { … } from './domain.mjs'` из `app.mjs` удаляется;</li><li>каждый модуль помещается в собственную IIFE, `'use strict'`; `domain` возвращает `Object.freeze({…})` с экспортами по алфавиту, `app` деструктурирует импорты;</li><li>CRLF нормализуется к `\n`, дат и путей в выводе нет.</li></ul>Ошибки контракта — `export default/{…}/*`, посторонний `import`, `import` в `domain.mjs`, импорт несуществующего имени, нет блока импорта — дают сообщение с файлом и строкой, код выхода 1, `tracker.js` не перезаписывается. |
+| `tracker.js` (сгенерированный) | Результат `node build.mjs`, 20 881 символ; первая строка — пометка «СГЕНЕРИРОВАНО build.mjs… Не редактировать вручную». Коммитится вместе с исходниками. |
+| `tests/acceptance.test.mjs` | Прежние строки 1–349 (51 тест) не изменены. Дописаны 22 теста: `isEnterSubmit`; актуальность `tracker.js`; синтаксис (`vm.Script`, `node --check`, нет `import/export`, есть BANNER); чувствительность к правке; детерминизм и CRLF; 6 ошибок контракта; выполнение `tracker.js` в `vm` с заглушкой DOM и `SecurityError` на геттере `localStorage`; `index.html`. |
+
+**Отличие от design.md.** В эскизе D3 исходники показаны с отступом внутри обёртки. В реализации код переносится без отступов, чтобы не менять содержимое возможных многострочных шаблонных строк. Тело `domain.mjs` (без `export`) и `app.mjs` (без блока import) входит в `tracker.js` дословно — проверено скриптом.
+
+**Рабочий порядок:** правка `domain.mjs` или `app.mjs` → `node build.mjs` → `node --test tests/acceptance.test.mjs`. Если забыть пересборку, тест актуальности упадёт с подсказкой.
+
+## Вывод команд (фактический)
+
+```
+$ node build.mjs
+tracker.js собран (20881 символов).
+
+$ node --check app.mjs / domain.mjs / build.mjs / tracker.js / tests/acceptance.test.mjs
+ok (все пять, exit 0)
+
+$ node --test tests/acceptance.test.mjs
+ok 1 - Операции над данными (1.2)
+ok 2 - T1 · Исходный пример
+ok 3 - T2 · Статус
+ok 4 - T3 · Фильтр
+ok 5 - T4 · Ошибки ввода
+ok 6 - T5 · Пустое состояние
+ok 7 - Проверка загружаемых данных (необязательное хранилище)
+ok 8 - redesign-ui · Пресеты и настройки по умолчанию (1.1)
+ok 9 - redesign-ui · Нормализация настроек (1.2)
+ok 10 - redesign-ui · Цвет текста на акценте (2.1)
+ok 11 - redesign-ui · Тема и поиск пресета (2.2)
+ok 12 - fix-sandbox-input · isEnterSubmit (1.1)
+ok 13 - fix-sandbox-input · Актуальность и синтаксис tracker.js (4.1)
+ok 14 - fix-sandbox-input · Ошибки контракта сборки (2.2)
+ok 15 - fix-sandbox-input · tracker.js в vm с заглушкой DOM (3.1, 3.2, 4.2)
+ok 16 - fix-sandbox-input · index.html (3.3)
+# tests 73
+# suites 16
+# pass 73
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+```
+
+## Что проверено фактически
+
+1. `node build.mjs` дважды подряд — одинаковый MD5 `tracker.js` (`8738250480af4c2a9112a19e31ccd9eb`).
+2. `node --check` для `app.mjs`, `domain.mjs`, `build.mjs`, `tracker.js`, теста — без ошибок.
+3. `node --test tests/acceptance.test.mjs` — 73/73: прежние 51 и новые 22.
+4. `diff` с копиями, сделанными до начала работы: строки 1–219 `domain.mjs` и 1–349 теста совпадают, прежние функции и тесты не изменены и не ослаблены.
+5. Ошибки сборки на временной копии вне проекта: `export default`, `import fs from 'node:fs'` в `app.mjs`, импорт `nope` → `exit=1`, понятное сообщение, `tracker.js` не перезаписан (MD5 тот же).
+6. Тест ловит устаревший файл: на временной копии добавлена строка в `app.mjs` без пересборки → `fail 1` с сообщением «tracker.js устарел — выполните `node build.mjs`»; после `node build.mjs` → 73/73.
+7. Автотест выполняет `tracker.js` в `node:vm` с заглушкой DOM, где геттер `localStorage` бросает `SecurityError` (имитация origin `null`). Это **не браузер**: реальные `file://`, CORS, sandbox-флаги, вёрстка и нативные события не проверялись. Результаты:
+   - исключений нет, новых глобальных имён нет, старт 8/2/25%, сообщение о работе без сохранения видно;
+   - `click` по «Добавить» → ровно одна задача (10/2/20%), фокус в «Название», поле очищено;
+   - `keydown` Enter в «Часах» и в «Названии» → `defaultPrevented`, ровно одна задача;
+   - Shift+Enter, `isComposing`, `keyCode 229` → задача не добавлена, ошибок нет;
+   - пустое название и кнопка → ошибка у поля, часы «2» сохранены;
+   - запасной `submit` → `defaultPrevented`, ровно одна задача;
+   - шестерёнка открывает панель, «Закрыть» закрывает.
+8. Статически: в `index.html` нет `type="module"` и `type="submit"`; есть `<script src="tracker.js" defer>`.
+
+**Браузер не запускался.**
+
+## Повторная проверка оператором (пункты 5.1–5.3 не отмечены)
+
+- **5.1 http-сервер** (`python3 -m http.server` → `http://localhost:8000/`): T1–T5, Enter в обоих полях и кнопка «Добавить», шестерёнка и настройки.
+- **5.2 `file://`** (двойной щелчок): в консоли нет `blocked by CORS policy`; T1–T5, Enter, кнопка, настройки. Работает ли сохранение между перезапусками, зависит от браузера; при отказе видно сообщение и работа в памяти.
+- **5.3 iframe** `sandbox="allow-scripts"` и `sandbox="allow-scripts allow-same-origin"`: нет `Blocked form submission` и необработанных `SecurityError`; T1–T5, Enter, кнопка, настройки работают. При `allow-scripts` без `allow-same-origin` настройки и задачи хранятся только в памяти — с сообщением.
+
+Пункт **6.1** закрыт этим разделом.

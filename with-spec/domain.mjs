@@ -217,3 +217,13 @@ export function accentTextColor(accent) {
   const lum = relativeLuminance(hslToRgb(clampAccent(accent)));
   return contrastRatio(lum, 0) >= contrastRatio(lum, 1) ? '#000' : '#fff';
 }
+
+// ---------- Ввод (fix-sandbox-input) ----------
+
+/**
+ * Нужно ли по этому keydown добавить задачу: Enter без Shift и не во время IME-композиции.
+ * keyCode 229 — признак композиции в Chromium (дополнительно к isComposing).
+ */
+export function isEnterSubmit({ key, shiftKey = false, isComposing = false, keyCode } = {}) {
+  return key === 'Enter' && !shiftKey && !isComposing && keyCode !== 229;
+}

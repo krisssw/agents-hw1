@@ -14,7 +14,8 @@
 ## Что где лежит
 
 - `brief.md` — общая постановка и проверки T1–T5. В каждую папку положена одинаковая копия.
-- `direct/`, `with-spec/` — `index.html`, `styles.css`, `app.mjs`, `domain.mjs`, `tests/acceptance.test.mjs`, отчёт ассистента `REPORT.md`.
+- `direct/`, `with-spec/` — `index.html`, `styles.css`, `app.mjs`, `domain.mjs`, `build.mjs`, `tracker.js` (собирается из app.mjs и domain.mjs командой `node build.mjs`), `tests/acceptance.test.mjs`, отчёт ассистента `REPORT.md`.
+- `bugfix-01.md` — описание дефекта 01 (шаги, ожидание, факт), переданное обеим попыткам.
 - `with-spec/openspec/changes/build-tracker/` — спецификация: `proposal.md`, `specs/tracker/spec.md`, `design.md`, `tasks.md`.
 - `prompts.md` — тексты всех обращений к ассистенту.
 - `logs/` — реальные логи: `openspec init`, `openspec validate`, `node --test`, `node --check`, браузерные проверки, http-server.
@@ -33,7 +34,7 @@ npx --yes http-server@14.1.1 . -p 8080 -c-1
 # открыть http://127.0.0.1:8080, остановить сервер: Ctrl+C
 ```
 
-Через `file://` страница не заработает: браузер блокирует ES-модули. Нужен локальный сервер.
+После исправления дефекта 01 (`bugfix-01.md`) страницу можно открыть и двойным щелчком по `index.html` (file://): браузер подключает классический `tracker.js`. После правок в `app.mjs` или `domain.mjs` выполните `node build.mjs`.
 
 Проверка спецификации:
 

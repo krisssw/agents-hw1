@@ -15,6 +15,7 @@ import {
   findPreset,
   resolveTheme,
   accentTextColor,
+  isEnterSubmit,
 } from './domain.mjs';
 
 const STORAGE_KEY = 'study-tracker.tasks.v1';
@@ -27,6 +28,7 @@ const el = {
   form: $('task-form'),
   title: $('task-title'),
   hours: $('task-hours'),
+  addButton: $('task-add'),
   titleError: $('task-title-error'),
   hoursError: $('task-hours-error'),
   filter: $('task-filter'),
@@ -353,10 +355,9 @@ function highlightNew(id) {
 }
 
 // ---------- Обработчики задач ----------
-// Enter в «Названии» или «Часах» вызывает неявную отправку формы (кнопка type=submit),
-// поэтому кнопка и Enter проходят через один и тот же обработчик и одну валидацию.
-el.form.addEventListener('submit', (event) => {
-  event.preventDefault();
+// Добавление не зависит от отправки формы (iframe sandbox без allow-forms блокирует submit):
+// кнопка — click, Enter в полях — keydown; оба пути и запасной submit вызывают addFromForm().
+function addFromForm() {
   const result = validateTaskInput({ title: el.title.value, hours: el.hours.value });
 
   if (!result.ok) {
@@ -374,6 +375,22 @@ el.form.addEventListener('submit', (event) => {
   setTasks(next);
   el.form.reset();
   el.title.focus();
+}
+
+el.addButton.addEventListener('click', () => addFromForm());
+
+for (const field of [el.title, el.hours]) {
+  field.addEventListener('keydown', (event) => {
+    if (!isEnterSubmit(event)) return;
+    event.preventDefault();
+    addFromForm();
+  });
+}
+
+// Запасной путь: если форма всё же отправляется, отменяем отправку и добавляем тем же способом.
+el.form.addEventListener('submit', (event) => {
+  event.preventDefault();
+  addFromForm();
 });
 
 el.list.addEventListener('change', (event) => {

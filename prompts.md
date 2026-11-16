@@ -54,3 +54,23 @@
 ### Обращение 2
 > /opsx-apply redesign-ui
 > Выполни по .opencode/commands/opsx-apply.md и SKILL.md. Не меняй правила build-tracker и ожидаемые значения T1–T5; прежние тесты не удаляй и не ослабляй, новые дописывай. Запусти node --test tests/acceptance.test.mjs и node --check. В tasks.md отмечай только реально выполненное (браузерную проверку не отмечай, браузер не запускай). Допиши в REPORT.md раздел «Доработка redesign-ui».
+
+---
+
+# Дефект 01: в окне просмотра и через file:// не работают добавление и настройки
+
+Дефект нашёл пользователь в опубликованной версии. Оператор воспроизвёл его в Chromium и описал в `bugfix-01.md` в формате «шаги, ожидание, факт». Обе попытки получили одинаковый файл.
+
+## direct — 1 обращение
+> Прочитай bugfix-01.md (шаги, ожидание, факт с логом консоли) и исправь дефект по разделу «Требования к исправлению». Не меняй правила brief.md, redesign-brief.md и ожидаемые значения T1–T5; прежние тесты не удаляй и не ослабляй. Запусти node build.mjs, node --test tests/acceptance.test.mjs и node --check для всех .mjs и tracker.js. Допиши в REPORT.md раздел «Исправление дефекта 01».
+
+## with-spec — 2 обращения
+### Обращение 1
+> /opsx-propose fix-sandbox-input
+> Используй bugfix-01.md. Подготовь proposal, specs/tracker/spec.md (дельта ADDED Requirements: добавление без отправки формы — кнопка и Enter через обработчики; работа без ES-модулей в браузере — классический tracker.js, собираемый build.mjs; тест актуальности сборки; хранилище при непрозрачном origin), design.md и tasks.md. Код не пиши.
+
+Оператор: `openspec validate fix-sandbox-input --strict --no-interactive` → valid.
+
+### Обращение 2
+> /opsx-apply fix-sandbox-input
+> Выполни по .opencode/commands/opsx-apply.md и SKILL.md. Не меняй правила build-tracker/redesign-ui и значения T1–T5; прежние тесты не удаляй и не ослабляй. Запусти node build.mjs, node --test tests/acceptance.test.mjs, node --check для всех .mjs и tracker.js. В tasks.md отмечай только реально выполненное (повторную проверку оператором в браузере не отмечай, браузер не запускай). Допиши в REPORT.md раздел «Исправление дефекта 01 (fix-sandbox-input)».

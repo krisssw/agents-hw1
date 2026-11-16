@@ -169,3 +169,35 @@ test('D2 · Цвет текста на акценте: чёрный на све�
   }
   for (const p of PRESET_ACCENTS) assert.match(accentTextColor(p), /^#(000000|ffffff)$/);
 });
+
+// ---------- Исправление дефекта 01: классический скрипт tracker.js ----------
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { buildTracker } from '../build.mjs';
+
+const fromRoot = (f) => fileURLToPath(new URL(`../${f}`, import.meta.url));
+
+test('B01 · tracker.js актуален: совпадает со сборкой из domain.mjs + app.mjs', () => {
+  const onDisk = readFileSync(fromRoot('tracker.js'), 'utf8');
+  assert.equal(onDisk, buildTracker(), 'tracker.js устарел — выполните node build.mjs');
+});
+
+test('B01 · tracker.js — классический скрипт без import/export, в IIFE', () => {
+  const code = readFileSync(fromRoot('tracker.js'), 'utf8');
+  assert.doesNotMatch(code, /^\s*(import|export)\b/m);
+  assert.match(code, /^\(function \(\) \{$/m);
+  assert.match(code, /\}\)\(\);\s*$/);
+  // компилируется как классический скрипт (не модуль); дубли объявлений дали бы SyntaxError
+  assert.doesNotThrow(() => new Function(code));
+});
+
+test('B01 · index.html подключает tracker.js без type=module; добавление не через submit', () => {
+  const html = readFileSync(fromRoot('index.html'), 'utf8');
+  assert.match(html, /<script src="tracker\.js" defer><\/script>/);
+  assert.doesNotMatch(html, /type="module"/);
+  assert.match(html, /<button type="button" id="add-btn"/);
+  const app = readFileSync(fromRoot('app.mjs'), 'utf8');
+  assert.match(app, /\$\('add-btn'\)\.addEventListener\('click', handleAdd\)/);
+  assert.match(app, /addEventListener\('keydown'/);
+  assert.match(app, /e\.key !== 'Enter'/);
+});

@@ -1,0 +1,4 @@
+2026-11-16T15:27:08+00:00
+$ openspec validate fix-sandbox-input --strict --no-interactive
+Change 'fix-sandbox-input' is valid
+exit=0

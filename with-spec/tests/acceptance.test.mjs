@@ -347,3 +347,243 @@ describe('redesign-ui · Тема и поиск пресета (2.2)', () => {
     assert.equal(findPreset(null), null);
   });
 });
+
+// ---------- fix-sandbox-input: клавиша Enter ----------
+import { isEnterSubmit } from '../domain.mjs';
+
+describe('fix-sandbox-input · isEnterSubmit (1.1)', () => {
+  test('Enter → добавить', () => {
+    assert.equal(isEnterSubmit({ key: 'Enter' }), true);
+    assert.equal(isEnterSubmit({ key: 'Enter', shiftKey: false, isComposing: false, keyCode: 13 }), true);
+  });
+  test('Shift+Enter, IME-композиция, keyCode 229, другая клавиша → не добавлять', () => {
+    assert.equal(isEnterSubmit({ key: 'Enter', shiftKey: true }), false);
+    assert.equal(isEnterSubmit({ key: 'Enter', isComposing: true }), false);
+    assert.equal(isEnterSubmit({ key: 'Enter', keyCode: 229 }), false);
+    assert.equal(isEnterSubmit({ key: 'a' }), false);
+    assert.equal(isEnterSubmit(), false);
+  });
+});
+
+// ---------- fix-sandbox-input: сборка tracker.js ----------
+import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import vm from 'node:vm';
+import { BANNER, buildTracker } from '../build.mjs';
+
+const ROOT = new URL('../', import.meta.url);
+const read = (name) => readFileSync(new URL(name, ROOT), 'utf8');
+const sources = () => ({ domainSource: read('domain.mjs'), appSource: read('app.mjs') });
+
+describe('fix-sandbox-input · Актуальность и синтаксис tracker.js (4.1)', () => {
+  test('tracker.js совпадает со сборкой из текущих domain.mjs + app.mjs', () => {
+    assert.ok(
+      buildTracker(sources()) === read('tracker.js'),
+      'tracker.js устарел — выполните `node build.mjs`',
+    );
+  });
+
+  test('tracker.js — корректный классический скрипт без import/export, с пометкой о генерации', () => {
+    const code = read('tracker.js');
+    assert.doesNotThrow(() => new vm.Script(code, { filename: 'tracker.js' }));
+    const check = spawnSync(process.execPath, ['--check', new URL('tracker.js', ROOT).pathname], { encoding: 'utf8' });
+    assert.equal(check.status, 0, check.stderr);
+    assert.ok(code.startsWith(BANNER));
+    assert.equal(/^\s*(import|export)\b/m.test(code), false);
+  });
+
+  test('правка app.mjs без пересборки меняет результат (тест актуальности упал бы)', () => {
+    const s = sources();
+    const changed = buildTracker({ ...s, appSource: s.appSource + '\n// правка\n' });
+    assert.notEqual(changed, buildTracker(s));
+    assert.notEqual(changed, read('tracker.js'));
+  });
+
+  test('сборка детерминирована и не зависит от переводов строк CRLF', () => {
+    const s = sources();
+    assert.equal(buildTracker(s), buildTracker(s));
+    const crlf = { domainSource: s.domainSource.replace(/\n/g, '\r\n'), appSource: s.appSource.replace(/\n/g, '\r\n') };
+    assert.equal(buildTracker(crlf), buildTracker(s));
+  });
+});
+
+describe('fix-sandbox-input · Ошибки контракта сборки (2.2)', () => {
+  const s = sources();
+  test('export default в domain.mjs → ошибка', () => {
+    assert.throws(() => buildTracker({ ...s, domainSource: s.domainSource + '\nexport default 1;\n' }), /domain\.mjs:\d+: неподдерживаемый export/);
+  });
+  test('export { … } в domain.mjs → ошибка', () => {
+    assert.throws(() => buildTracker({ ...s, domainSource: s.domainSource + '\nexport { MIN_HOURS as X };\n' }), /неподдерживаемый export/);
+  });
+  test('посторонний import в app.mjs → ошибка', () => {
+    assert.throws(() => buildTracker({ ...s, appSource: s.appSource + "\nimport fs from 'node:fs';\n" }), /app\.mjs:\d+: неподдерживаемый import/);
+  });
+  test('import в domain.mjs → ошибка', () => {
+    assert.throws(() => buildTracker({ ...s, domainSource: "import x from './x.mjs';\n" + s.domainSource }), /не должен ничего импортировать/);
+  });
+  test('импорт несуществующего имени → ошибка', () => {
+    const bad = s.appSource.replace('  isEnterSubmit,\n', '  isEnterSubmit,\n  nope,\n');
+    assert.throws(() => buildTracker({ ...s, appSource: bad }), /«nope» отсутствует среди export/);
+  });
+  test('нет блока импорта из domain.mjs → ошибка', () => {
+    assert.throws(() => buildTracker({ ...s, appSource: 'console.log(1);\n' }), /не найден блок import/);
+  });
+});
+
+// Минимальная заглушка DOM для выполнения tracker.js в vm (не браузер).
+function makeDom(html) {
+  class El {
+    constructor(tag, attrs = {}) {
+      this.tagName = tag; this.attrs = { ...attrs }; this.children = []; this.parent = null; this.listeners = {};
+      this.dataset = {}; this.textContent = ''; this.value = ''; this.checked = false; this.type = attrs.type ?? '';
+      this.hidden = 'hidden' in attrs; this.className = attrs.class ?? ''; this._style = {};
+      this.style = { setProperty: (k, v) => { this._style[k] = v; } };
+    }
+    get classList() {
+      const self = this;
+      const list = () => self.className.split(' ').filter(Boolean);
+      return {
+        add: (c) => { if (!list().includes(c)) self.className = [...list(), c].join(' '); },
+        remove: (c) => { self.className = list().filter((x) => x !== c).join(' '); },
+        contains: (c) => list().includes(c),
+      };
+    }
+    append(...c) { for (const x of c) { x.parent = this; this.children.push(x); } }
+    replaceChildren(...c) { this.children = []; this.append(...c); }
+    setAttribute(k, v) { this.attrs[k] = String(v); }
+    removeAttribute(k) { delete this.attrs[k]; }
+    getAttribute(k) { return this.attrs[k] ?? null; }
+    addEventListener(t, f) { (this.listeners[t] ??= []).push(f); }
+    dispatch(type, props = {}) {
+      const ev = { type, target: this, defaultPrevented: false, preventDefault() { this.defaultPrevented = true; }, ...props };
+      for (const f of this.listeners[type] ?? []) f(ev);
+      return ev;
+    }
+    focus() { dom.focused = this; }
+    reset() { dom.byId['task-title'].value = ''; dom.byId['task-hours'].value = ''; }
+    contains(n) { for (; n; n = n.parent) if (n === this) return true; return false; }
+    *walk() { for (const c of this.children) { yield c; yield* c.walk(); } }
+    matches(sel) {
+      if (sel === '.task') return this.classList.contains('task');
+      if (sel === '.task--new') return this.classList.contains('task--new');
+      const m = sel.match(/^\[data-action="(\w+)"\]$/);
+      return m ? this.dataset.action === m[1] : false;
+    }
+    closest(sel) { for (let n = this; n; n = n.parent) if (n.matches(sel)) return n; return null; }
+    querySelectorAll(sel) { return [...this.walk()].filter((n) => n.matches(sel)); }
+    querySelector(sel) { return this.querySelectorAll(sel)[0] ?? null; }
+  }
+  const dom = { byId: {}, focused: null, docListeners: {} };
+  for (const m of html.matchAll(/<(\w+)([^>]*\sid="([^"]+)"[^>]*)>/g)) {
+    const attrs = {};
+    for (const a of m[2].matchAll(/([\w-]+)(?:="([^"]*)")?/g)) attrs[a[1]] = a[2] ?? '';
+    dom.byId[m[3]] = new El(m[1], attrs);
+  }
+  dom.document = {
+    getElementById: (id) => dom.byId[id] ?? null,
+    createElement: (t) => new El(t),
+    documentElement: new El('html'),
+    addEventListener: (t, f) => { (dom.docListeners[t] ??= []).push(f); },
+  };
+  return dom;
+}
+
+function runTracker({ storage = 'security-error' } = {}) {
+  const dom = makeDom(read('index.html'));
+  const sandbox = {
+    document: dom.document,
+    matchMedia: () => ({ matches: true, addEventListener() {} }),
+    setTimeout, clearTimeout, console,
+  };
+  if (storage === 'security-error') {
+    // Непрозрачный origin: сам геттер localStorage бросает SecurityError.
+    Object.defineProperty(sandbox, 'localStorage', {
+      get() { const e = new Error('The document is sandboxed and lacks the allow-same-origin flag.'); e.name = 'SecurityError'; throw e; },
+    });
+  }
+  const context = vm.createContext(sandbox);
+  const before = new Set(Object.getOwnPropertyNames(context));
+  new vm.Script(read('tracker.js'), { filename: 'tracker.js' }).runInContext(context);
+  const added = Object.getOwnPropertyNames(context).filter((k) => !before.has(k));
+  const $ = (id) => dom.byId[id];
+  const summary = () => `${$('total-hours').textContent}/${$('done-hours').textContent}/${$('progress-value').textContent}%`;
+  return { dom, $, summary, added };
+}
+
+describe('fix-sandbox-input · tracker.js в vm с заглушкой DOM (3.1, 3.2, 4.2)', () => {
+  test('выполняется без исключений при SecurityError на localStorage и не создаёт глобальных имён', () => {
+    const { $, summary, added } = runTracker();
+    assert.deepEqual(added, []);
+    assert.equal(summary(), '8/2/25%');
+    assert.equal($('storage-message').hidden, false, 'видно сообщение о работе без сохранения');
+  });
+
+  test('кнопка «Добавить» (click) добавляет ровно одну задачу', () => {
+    const { $, summary, dom } = runTracker();
+    $('task-title').value = 'Тест'; $('task-hours').value = '2';
+    $('task-add').dispatch('click');
+    assert.equal(summary(), '10/2/20%');
+    assert.equal($('task-list').children.length, 4);
+    assert.equal(dom.focused, $('task-title'));
+    assert.equal($('task-title').value, '');
+  });
+
+  for (const field of ['task-hours', 'task-title']) {
+    test(`Enter в поле ${field} добавляет ровно одну задачу и отменяет действие по умолчанию`, () => {
+      const { $, summary } = runTracker();
+      $('task-title').value = 'Тест'; $('task-hours').value = '2';
+      const ev = $(field).dispatch('keydown', { key: 'Enter', shiftKey: false, isComposing: false, keyCode: 13 });
+      assert.equal(ev.defaultPrevented, true);
+      assert.equal(summary(), '10/2/20%');
+      assert.equal($('task-list').children.length, 4);
+    });
+  }
+
+  test('Shift+Enter и IME-композиция не добавляют задачу и не показывают ошибку', () => {
+    const { $, summary } = runTracker();
+    $('task-title').value = 'Тест'; $('task-hours').value = '2';
+    $('task-hours').dispatch('keydown', { key: 'Enter', shiftKey: true });
+    $('task-hours').dispatch('keydown', { key: 'Enter', isComposing: true });
+    $('task-hours').dispatch('keydown', { key: 'Enter', keyCode: 229 });
+    assert.equal(summary(), '8/2/25%');
+    assert.equal($('task-title-error').hidden, true);
+    assert.equal($('task-hours-error').hidden, true);
+  });
+
+  test('ошибка ввода через кнопку: задача не добавлена, ошибка у поля, значения сохранены', () => {
+    const { $, summary } = runTracker();
+    $('task-title').value = ''; $('task-hours').value = '2';
+    $('task-add').dispatch('click');
+    assert.equal(summary(), '8/2/25%');
+    assert.equal($('task-title-error').hidden, false);
+    assert.equal($('task-hours').value, '2');
+  });
+
+  test('запасной submit отменяется и добавляет ровно одну задачу', () => {
+    const { $, summary } = runTracker();
+    $('task-title').value = 'Тест'; $('task-hours').value = '2';
+    const ev = $('task-form').dispatch('submit');
+    assert.equal(ev.defaultPrevented, true);
+    assert.equal(summary(), '10/2/20%');
+  });
+
+  test('шестерёнка открывает и закрывает панель настроек при недоступном хранилище', () => {
+    const { $ } = runTracker();
+    $('settings-toggle').dispatch('click');
+    assert.equal($('settings-panel').hidden, false);
+    $('settings-close').dispatch('click');
+    assert.equal($('settings-panel').hidden, true);
+  });
+});
+
+describe('fix-sandbox-input · index.html (3.3)', () => {
+  const html = read('index.html');
+  test('подключён классический tracker.js с defer, без type="module"', () => {
+    assert.match(html, /<script src="tracker\.js" defer><\/script>/);
+    assert.equal(/type="module"/.test(html), false);
+  });
+  test('кнопка «Добавить» — type="button", кнопок type="submit" нет', () => {
+    assert.match(html, /<button id="task-add" type="button"/);
+    assert.equal(/type="submit"/.test(html), false);
+  });
+});

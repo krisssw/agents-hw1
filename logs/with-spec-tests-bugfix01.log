@@ -1,0 +1,20 @@
+## 2026-11-16T15:29:50+00:00 with-spec bugfix-01
+tracker.js собран (20881 символов).
+1..16
+# tests 73
+# suites 16
+# pass 73
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1112.114334
+check OK app.mjs
+check OK build.mjs
+check OK domain.mjs
+check OK tracker.js
+check OK tests/acceptance.test.mjs
+✓ change/build-tracker
+✓ change/fix-sandbox-input
+✓ change/redesign-ui
+Totals: 3 passed, 0 failed (3 items)

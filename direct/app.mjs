@@ -32,21 +32,43 @@ function storageFailed() {
   showStorageMsg('Хранилище браузера недоступно: задачи и настройки работают в памяти и не сохранятся после перезагрузки.');
 }
 
-function readJson(key) {
+// Непрозрачный origin (file://, iframe sandbox без allow-same-origin) бросает SecurityError
+// уже при обращении к window.localStorage — поэтому доступ к хранилищу только через try.
+function getStorage() {
+  if (!state.storageOk) return null;
   try {
-    const raw = localStorage.getItem(key);
-    return raw === null ? undefined : JSON.parse(raw);
-  } catch (e) {
-    if (e instanceof SyntaxError) return undefined; // повреждённые данные — используем значения по умолчанию
+    const s = window.localStorage;
+    if (!s) throw new Error('localStorage отсутствует');
+    return s;
+  } catch {
+    storageFailed();
+    return null;
+  }
+}
+
+function readJson(key) {
+  const storage = getStorage();
+  if (!storage) return undefined;
+  let raw;
+  try {
+    raw = storage.getItem(key);
+  } catch {
     storageFailed();
     return undefined;
+  }
+  if (raw === null) return undefined;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return undefined; // повреждённые данные — используем значения по умолчанию
   }
 }
 
 function writeJson(key, value) {
-  if (!state.storageOk) return;
+  const storage = getStorage();
+  if (!storage) return;
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    storage.setItem(key, JSON.stringify(value));
   } catch {
     storageFailed();
   }
@@ -126,9 +148,9 @@ function setError(field, msg) {
   $(field).setAttribute('aria-invalid', msg ? 'true' : 'false');
 }
 
-// Enter в «Название» и «Часы» вызывает submit формы (неявная отправка) — та же валидация, что и у кнопки.
-$('task-form').addEventListener('submit', (e) => {
-  e.preventDefault();
+// Добавление не зависит от отправки формы: в iframe sandbox без allow-forms submit блокируется.
+// Кнопка (click), Enter в полях (keydown) и submit (обычное открытие) вызывают одну функцию.
+function handleAdd() {
   const btn = $('add-btn');
   btn.classList.add('pressed');
   setTimeout(() => btn.classList.remove('pressed'), 140);
@@ -141,10 +163,24 @@ $('task-form').addEventListener('submit', (e) => {
     $(res.errors.title ? 'title' : 'hours').focus();
     return; // значения формы не сбрасываются
   }
-  e.target.reset();
+  $('title').value = '';
+  $('hours').value = '';
   state.lastAddedId = res.task.id;
   update(res.tasks);
   $('title').focus();
+}
+
+$('add-btn').addEventListener('click', handleAdd);
+for (const id of ['title', 'hours']) {
+  $(id).addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || e.shiftKey || e.isComposing || e.keyCode === 229) return;
+    e.preventDefault();
+    handleAdd();
+  });
+}
+$('task-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  handleAdd();
 });
 
 for (const r of document.querySelectorAll('input[name="filter"]')) {
